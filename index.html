@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serial Port Reader</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            background: #fff;
+            height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .btn {
+            border-radius: 25px;
+        }
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+        h1 {
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: #495057;
+        }
+        label {
+            font-weight: 500;
+        }
+        .card-header .btn {
+            margin-left: auto;
+        }
+    </style>
+</head>
+<body class="container my-5">
+    <h1 class="text-center">Serial Port Reader</h1>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+            <span>Configuration</span>
+            <button id="disconnect" class="btn btn-danger btn-sm ms-auto" style="display:none;">Disconnect</button>
+        </div>
+        <div class="card-body" id="config-section">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="baudRate" class="form-label">Baud Rate</label>
+                    <select id="baudRate" class="form-select">
+                        <option value="9600" selected>9600</option>
+                        <option value="19200">19200</option>
+                        <option value="38400">38400</option>
+                        <option value="57600">57600</option>
+                        <option value="115200">115200</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="parity" class="form-label">Parity</label>
+                    <select id="parity" class="form-select">
+                        <option value="none" selected>None</option>
+                        <option value="even">Even</option>
+                        <option value="odd">Odd</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="startBits" class="form-label">Start Bits</label>
+                    <select id="startBits" class="form-select">
+                        <option value="1" selected>1</option>
+                        <option value="2">2</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="stopBits" class="form-label">Stop Bits</label>
+                    <select id="stopBits" class="form-select">
+                        <option value="1" selected>1</option>
+                        <option value="1.5">1.5</option>
+                        <option value="2">2</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="dataBits" class="form-label">Data Bits</label>
+                    <select id="dataBits" class="form-select">
+                        <option value="7">7</option>
+                        <option value="8" selected>8</option>
+                    </select>
+                </div>
+            </div>
+            <div class="text-center mb-4">
+                <button id="connect" class="btn btn-success">Connect to Serial Port</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">Send Data</div>
+        <div class="card-body">
+            <label for="sendData" class="form-label">Data</label>
+            <textarea id="sendData" class="form-control mb-3" rows="2" placeholder="Enter data to send..."></textarea>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="sendAsHex">
+                <label class="form-check-label" for="sendAsHex">Send as Hex</label>
+            </div>
+            <button id="sendButton" class="btn btn-primary mt-3">Send</button>
+            <button id="sendMDBCommand" class="btn btn-info mt-3">Send MDB Command</button>
+            <button id="enableCoinAcceptor" class="btn btn-warning mt-3">Enable Coin Acceptor</button>
+            <button id="checkCoinCount" class="btn btn-secondary mt-3">Check Coin Count</button>
+            <button id="enableBanknoteAcceptor" class="btn btn-success mt-3">Enable Banknote Acceptor</button>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">Receive Data</div>
+        <div class="card-body">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="receiveAsHex">
+                <label class="form-check-label" for="receiveAsHex">Receive as Hex</label>
+            </div>
+            <div id="output"></div>
+        </div>
+    </div>
+
+    <div class="text-center mt-3">
+        <button id="exportButton" class="btn btn-secondary">Export Log</button>
+    </div>
+
+    <footer>
+        Created by <strong>Toon Makkunchon</strong> | Contact: <a href="mailto:toon.makkunchon@example.com">toon.makkunchon@example.com</a>
+    </footer>
+
+    <script>
+        const connectButton = document.getElementById('connect');
+        const disconnectButton = document.getElementById('disconnect');
+        const sendButton = document.getElementById('sendButton');
+        const sendMDBCommandButton = document.getElementById('sendMDBCommand');
+        const enableCoinAcceptorButton = document.getElementById('enableCoinAcceptor');
+        const checkCoinCountButton = document.getElementById('checkCoinCount');
+        const enableBanknoteAcceptorButton = document.getElementById('enableBanknoteAcceptor');
+        const exportButton = document.getElementById('exportButton');
+        const outputDiv = document.getElementById('output');
+        const baudRateSelect = document.getElementById('baudRate');
+        const paritySelect = document.getElementById('parity');
+        const startBitsSelect = document.getElementById('startBits');
+        const stopBitsSelect = document.getElementById('stopBits');
+        const dataBitsSelect = document.getElementById('dataBits');
+        const sendDataInput = document.getElementById('sendData');
+        const sendAsHexCheckbox = document.getElementById('sendAsHex');
+        const receiveAsHexCheckbox = document.getElementById('receiveAsHex');
+        const configSection = document.getElementById('config-section');
+
+        let port;
+        let reader;
+        let writer;
+        let keepReading = true;
+
+        function appendOutput(message, type) {
+            const timestamp = new Date().toLocaleTimeString('en-GB'); // 24-hour format
+            const prefix = type === 'sent' ? 'Sent' : 'Received';
+
+            if (type === 'received' && receiveAsHexCheckbox.checked) {
+                const hexMessage = Array.from(message).map(char => `0x${char.charCodeAt(0).toString(16).padStart(2, '0')}`).join(' ');
+                outputDiv.textContent += `[${timestamp}] ${prefix}: ${hexMessage}\n`;
+            } else {
+                outputDiv.textContent += `[${timestamp}] ${prefix}: ${message}\n`;
+            }
+            outputDiv.scrollTop = outputDiv.scrollHeight;
+        }
+
+        async function connectToSerial() {
+            try {
+                port = await navigator.serial.requestPort();
+                await port.open({
+                    baudRate: parseInt(baudRateSelect.value),
+                    parity: paritySelect.value,
+                    startBits: parseInt(startBitsSelect.value),
+                    stopBits: parseFloat(stopBitsSelect.value),
+                    dataBits: parseInt(dataBitsSelect.value)
+                });
+
+                appendOutput('Connected to Serial Port', 'info');
+
+                writer = port.writable.getWriter();
+
+                connectButton.style.display = 'none';
+                disconnectButton.style.display = 'inline-block';
+                configSection.style.display = 'none';
+
+                readSerialData();
+            } catch (error) {
+                console.error('Error connecting to serial port:', error);
+                appendOutput(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function readSerialData() {
+            const decoder = new TextDecoderStream();
+            const inputStream = port.readable.pipeThrough(decoder);
+            reader = inputStream.getReader();
+
+            try {
+                while (keepReading) {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        break;
+                    }
+                    appendOutput(value, 'received');
+                }
+            } catch (error) {
+                console.error('Error reading from serial port:', error);
+                appendOutput(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function sendSerialData() {
+            if (!writer) {
+                appendOutput('Error: Port is not open. Please connect first.', 'error');
+                return;
+            }
+
+            const data = sendDataInput.value;
+            if (sendAsHexCheckbox.checked) {
+                if (!/^[0-9a-fA-F\s]+$/.test(data)) {
+                    appendOutput('Invalid Hex data.', 'error');
+                    return;
+                }
+                const hexData = data.replace(/\s+/g, '').match(/.{1,2}/g).map(byte => parseInt(byte, 16));
+                await writer.write(new Uint8Array(hexData));
+                appendOutput(hexData.map(b => `0x${b.toString(16).toUpperCase().padStart(2, '0')}`).join(' '), 'sent');
+            } else {
+                await writer.write(new TextEncoder().encode(data));
+                appendOutput(data, 'sent');
+            }
+        }
+
+        async function sendMDBCommand() {
+            if (!writer) {
+                appendOutput('Error: Port is not open. Please connect first.', 'error');
+                return;
+            }
+
+            const command = new Uint8Array([0x0A]); // Command to check coin count
+            await writer.write(command);
+            appendOutput('0x0A', 'sent');
+        }
+
+        async function enableCoinAcceptor() {
+            if (!writer) {
+                appendOutput('Error: Port is not open. Please connect first.', 'error');
+                return;
+            }
+
+            const command = new Uint8Array([0x0C, 0xFF, 0xFF, 0xFF, 0xFF]); // Command to enable coin acceptor
+            await writer.write(command);
+            appendOutput('0x0C 0xFF 0xFF 0xFF 0xFF', 'sent');
+        }
+
+        async function checkCoinCount() {
+            if (!writer) {
+                appendOutput('Error: Port is not open. Please connect first.', 'error');
+                return;
+            }
+
+            const command = new Uint8Array([0x0A]); // Command to check coin count
+            await writer.write(command);
+            appendOutput('0x0A', 'sent');
+        }
+
+        async function enableBanknoteAcceptor() {
+            if (!writer) {
+                appendOutput('Error: Port is not open. Please connect first.', 'error');
+                return;
+            }
+
+            const command = new Uint8Array([0x34, 0x00, 0x07, 0x00, 0x00]); // Command to enable banknote acceptor
+            await writer.write(command);
+            appendOutput('0x34 0x00 0x07 0x00 0x00', 'sent');
+        }
+
+        function exportLog() {
+            const blob = new Blob([outputDiv.textContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'serial_log.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        async function disconnectFromSerial() {
+            keepReading = false;
+
+            if (reader) {
+                await reader.cancel();
+                reader = null;
+            }
+
+            if (writer) {
+                writer.releaseLock();
+                writer = null;
+            }
+
+            if (port) {
+                await port.close();
+                port = null;
+            }
+
+            connectButton.style.display = 'inline-block';
+            disconnectButton.style.display = 'none';
+            configSection.style.display = 'block';
+
+            appendOutput('Disconnected from Serial Port', 'info');
+        }
+
+        connectButton.addEventListener('click', connectToSerial);
+        disconnectButton.addEventListener('click', disconnectFromSerial);
+        sendButton.addEventListener('click', sendSerialData);
+        sendMDBCommandButton.addEventListener('click', sendMDBCommand);
+        enableCoinAcceptorButton.addEventListener('click', enableCoinAcceptor);
+        checkCoinCountButton.addEventListener('click', checkCoinCount);
+        enableBanknoteAcceptorButton.addEventListener('click', enableBanknoteAcceptor);
+        exportButton.addEventListener('click', exportLog);
+    </script>
+</body>
+</html>
