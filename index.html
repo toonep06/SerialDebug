@@ -58,10 +58,12 @@
         .btn-full-width {
             width: 100%;
         }
+
         .github-logo {
             width: 50px;
             margin-right: 5px;
         }
+
         .profile-img {
             width: 50px;
             height: 50px;
@@ -69,28 +71,38 @@
             margin-right: 10px;
 
         }
+
         .footer-links {
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 10px;
         }
+
         .footer-links a {
             text-decoration: none;
             color: #6c757d;
         }
+
         .navbar {
             margin-bottom: 30px;
             border-radius: 5px;
         }
+
         .navbar-brand {
             display: flex;
             align-items: center;
             gap: 10px;
         }
+
         .version {
             color: #fff;
             font-size: 0.9rem;
+        }
+
+        .active-menu {
+            background-color: #198754 !important;
+            color: white !important;
         }
     </style>
 </head>
@@ -111,7 +123,7 @@
     </div>
 
     <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
+        <div class="card-header bg-info text-white d-flex align-items-center">
             <span>Configuration</span>
             <button id="disconnect" class="btn btn-danger btn-sm ms-auto" style="display:none;">Disconnect</button>
         </div>
@@ -165,42 +177,87 @@
             </div>
         </div>
     </div>
-
     <div class="card mb-4">
-        <div class="card-header bg-secondary text-white">Send</div>
-        <div class="card-body">
-            <h5 class="d-flex align-items-center">Send Data
-                <div class="form-check ms-3">
-                    <input class="form-check-input" type="checkbox" id="sendAsHex">
-                    <label class="form-check-label" for="sendAsHex">Send as Hex</label>
+        <div class="card-header bg-info text-white">Menu</div>
+        <div class="card-body text-start">
+            <button id="showSend" class="btn btn-secondary menu-button active-menu"> Raw Data</button>
+            <button id="showModbus" class="btn btn-secondary menu-button  "> Modbus RTU</button>
+        </div>
+        <div class="card" id="sendSection" style="display: block;">
+            <div class="card-body">
+                <h5 class="d-flex align-items-center">Send Data
+                    <div class="form-check ms-3">
+                        <input class="form-check-input" type="checkbox" id="sendAsHex">
+                        <label class="form-check-label" for="sendAsHex">Send as Hex</label>
+                    </div>
+                </h5>
+                <textarea id="sendData" class="form-control mb-3" rows="2"
+                    placeholder="Enter data to send..."></textarea>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="autoSend">
+                        <label class="form-check-label" for="autoSend">Auto Send</label>
+                    </div>
+                    <select id="sendInterval" class="form-select w-auto">
+                        <option value="500">500 ms</option>
+                        <option value="1000" selected>1000 ms</option>
+                        <option value="2000">2000 ms</option>
+                        <option value="3000">3000 ms</option>
+                        <option value="5000">5000 ms</option>
+                    </select>
                 </div>
-            </h5>
-            <textarea id="sendData" class="form-control mb-3" rows="2" placeholder="Enter data to send..."></textarea>
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="autoSend">
-                    <label class="form-check-label" for="autoSend">Auto Send</label>
+                <div class="text-center">
+                    <button id="sendButton" class="btn btn-primary btn-full-width mt-3">Send</button>
                 </div>
-                <select id="sendInterval" class="form-select w-auto">
-                    <option value="500">500 ms</option>
-                    <option value="1000" selected>1000 ms</option>
-                    <option value="2000">2000 ms</option>
-                    <option value="3000">3000 ms</option>
-                    <option value="5000">5000 ms</option>
-                </select>
+                <h5 class="mt-4">Basic Commands</h5>
+                <button id="sendMDBCommand" class="btn btn-info mt-2">Send MDB Command</button>
+                <h5 class="mt-4">Device Controls</h5>
+                <button id="enableCoinAcceptor" class="btn btn-warning mt-2">Enable Coin Acceptor</button>
+                <button id="checkCoinCount" class="btn btn-secondary mt-2">Check Coin Count</button>
+                <button id="enableBanknoteAcceptor" class="btn btn-success mt-2">Enable Banknote Acceptor</button>
             </div>
-            <div class="text-center">
-                <button id="sendButton" class="btn btn-primary btn-full-width mt-3">Send</button>
+        </div>
+
+        <div class="card" id="modbusSection" style="display: none;">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="modbusSlaveId" class="form-label">Slave ID</label>
+                        <input type="number" id="modbusSlaveId" class="form-control" value="1" min="1" max="247">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="modbusFunctionCode" class="form-label">Function Code</label>
+                        <select id="modbusFunctionCode" class="form-select">
+                            <option value="1">Read Coils (01)</option>
+                            <option value="2">Read Discrete Inputs (02)</option>
+                            <option value="3">Read Holding Registers (03)</option>
+                            <option value="4">Read Input Registers (04)</option>
+                            <option value="5">Write Single Coil (05)</option>
+                            <option value="6">Write Single Register (06)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="modbusAddress" class="form-label">Register/Coil Address</label>
+                        <input type="number" id="modbusAddress" class="form-control" value="0" min="0">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="modbusQuantity" class="form-label">Quantity</label>
+                        <input type="number" id="modbusQuantity" class="form-control" value="1" min="1">
+                    </div>
+                </div>
+                <div class="row" id="modbusWriteValueRow" style="display: none;">
+                    <div class="col-md-12 mb-3">
+                        <label for="modbusWriteValue" class="form-label">Write Value</label>
+                        <input type="text" id="modbusWriteValue" class="form-control"
+                            placeholder="Enter value to write...">
+                    </div>
+                </div>
+                <button id="sendModbusCommand" class="btn btn-primary btn-full-width">Send Modbus Command</button>
             </div>
-            <h5 class="mt-4">Basic Commands</h5>
-            <button id="sendMDBCommand" class="btn btn-info mt-2">Send MDB Command</button>
-            <h5 class="mt-4">Device Controls</h5>
-            <button id="enableCoinAcceptor" class="btn btn-warning mt-2">Enable Coin Acceptor</button>
-            <button id="checkCoinCount" class="btn btn-secondary mt-2">Check Coin Count</button>
-            <button id="enableBanknoteAcceptor" class="btn btn-success mt-2">Enable Banknote Acceptor</button>
         </div>
     </div>
-
     <div class="card mb-4">
         <div class="card-header bg-secondary text-white">Receive Data</div>
         <div class="card-body">
@@ -220,11 +277,13 @@
     <footer>
         <div class="footer-links">
             <div class="d-flex align-items-center">
-                <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub Logo" class="github-logo">
+                <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub Logo"
+                    class="github-logo">
                 <a href="https://github.com/toonep06/SerialDebug" target="_blank">GitHub Repository</a>
             </div>
             <div class="d-flex align-items-center">
-                <img src="https://avatars.githubusercontent.com/u/96173150?v=4" alt="GitHub Profile" class="profile-img">
+                <img src="https://avatars.githubusercontent.com/u/96173150?v=4" alt="GitHub Profile"
+                    class="profile-img">
                 <a href="https://github.com/toonep06" target="_blank">Toon Makkunchon</a>
             </div>
         </div>
@@ -454,6 +513,112 @@
             outputDiv.textContent = '';
         }
 
+        document.getElementById('sendModbusCommand').addEventListener('click', async () => {
+            if (!writer) {
+                alert('Port not open!');
+                return;
+            }
+
+            const slaveId = parseInt(document.getElementById('modbusSlaveId').value, 10);
+            const functionCode = parseInt(document.getElementById('modbusFunctionCode').value, 10);
+            const address = parseInt(document.getElementById('modbusAddress').value, 10);
+            const quantity = parseInt(document.getElementById('modbusQuantity').value, 10);
+
+            let frame;
+
+            if (functionCode === 5 || functionCode === 6) {
+                const writeValue = parseInt(document.getElementById('modbusWriteValue').value, 10);
+                frame = buildModbusWriteFrame(slaveId, functionCode, address, writeValue);
+            } else {
+                frame = buildModbusReadFrame(slaveId, functionCode, address, quantity);
+            }
+            appendOutput(frame.map(b => b.toString(16).padStart(2, '0')).join(' '), 'sent');
+            await writer.write(new Uint8Array(frame));
+           
+        });
+
+        function buildModbusReadFrame(slaveId, functionCode, address, quantity) {
+            const frame = [
+                slaveId,
+                functionCode,
+                (address >> 8) & 0xFF,
+                address & 0xFF,
+                (quantity >> 8) & 0xFF,
+                quantity & 0xFF
+            ];
+
+            const crc = calculateCRC(frame);
+            frame.push(crc & 0xFF, (crc >> 8) & 0xFF);
+            return frame;
+        }
+
+        function buildModbusWriteFrame(slaveId, functionCode, address, value) {
+            const frame = [
+                slaveId,
+                functionCode,
+                (address >> 8) & 0xFF,
+                address & 0xFF,
+                (value >> 8) & 0xFF,
+                value & 0xFF
+            ];
+
+            const crc = calculateCRC(frame);
+            frame.push(crc & 0xFF, (crc >> 8) & 0xFF);
+            return frame;
+        }
+
+        function calculateCRC(data) {
+            let crc = 0xFFFF;
+            for (const byte of data) {
+                crc ^= byte;
+                for (let i = 0; i < 8; i++) {
+                    if (crc & 0x1) {
+                        crc = (crc >> 1) ^ 0xA001;
+                    } else {
+                        crc >>= 1;
+                    }
+                }
+            }
+            return crc;
+        }
+        document.getElementById('showSend').addEventListener('click', () => {
+            document.getElementById('sendSection').style.display = 'block';
+            document.getElementById('modbusSection').style.display = 'none';
+        });
+
+        document.getElementById('showModbus').addEventListener('click', () => {
+            document.getElementById('modbusSection').style.display = 'block';
+            document.getElementById('sendSection').style.display = 'none';
+        });
+        document.getElementById('modbusFunctionCode').addEventListener('change', (event) => {
+            const writeValueRow = document.getElementById('modbusWriteValueRow');
+            const selectedFunction = event.target.value;
+            if (selectedFunction === '5' || selectedFunction === '6') {
+                writeValueRow.style.display = 'block';
+            } else {
+                writeValueRow.style.display = 'none';
+            }
+        });
+        const menuButtons = document.querySelectorAll('.menu-button');
+
+        menuButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                menuButtons.forEach(btn => btn.classList.remove('active-menu'));
+                button.classList.add('active-menu');
+
+                if (button.id === 'showSend') {
+                    document.getElementById('sendSection').style.display = 'block';
+                    document.getElementById('modbusSection').style.display = 'none';
+                } else if (button.id === 'showModbus') {
+                    document.getElementById('modbusSection').style.display = 'block';
+                    document.getElementById('sendSection').style.display = 'none';
+                }
+            });
+        });
+
+        // Set default state
+        menuButtons.forEach(btn => btn.classList.remove('active-menu'));
+        document.getElementById('showSend').classList.add('active-menu');
         document.addEventListener('DOMContentLoaded', checkWebSerialSupport);
         connectButton.addEventListener('click', connectToSerial);
         disconnectButton.addEventListener('click', disconnectFromSerial);
