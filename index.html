@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +11,7 @@
             background-color: #f8f9fa;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+
         #output {
             margin-top: 20px;
             padding: 15px;
@@ -21,34 +23,49 @@
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
+
         .card {
             border-radius: 12px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
+
         .btn {
             border-radius: 25px;
         }
+
         footer {
             margin-top: 40px;
             text-align: center;
             font-size: 0.9em;
             color: #6c757d;
         }
+
         h1 {
             font-weight: 600;
             margin-bottom: 30px;
             color: #495057;
         }
+
         label {
             font-weight: 500;
         }
+
         .card-header .btn {
             margin-left: auto;
         }
+
+        .btn-full-width {
+            width: 100%;
+        }
     </style>
 </head>
+
 <body class="container my-5">
-    <h1 class="text-center">Serial Port Reader</h1>
+    <h1 class="text-center">Serial Port Monitor beta 1.0.0</h1>
+    <div class="alert alert-danger d-none" id="unsupportedAlert">
+        <strong>Web Serial API is not supported on this browser or device.</strong>
+        Please use a supported browser like Chrome on Android or a desktop browser.
+    </div>
 
     <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -107,19 +124,37 @@
     </div>
 
     <div class="card mb-4">
-        <div class="card-header bg-secondary text-white">Send Data</div>
+        <div class="card-header bg-secondary text-white">Send</div>
         <div class="card-body">
-            <label for="sendData" class="form-label">Data</label>
+            <h5 class="d-flex align-items-center">Send Data
+                <div class="form-check ms-3">
+                    <input class="form-check-input" type="checkbox" id="sendAsHex">
+                    <label class="form-check-label" for="sendAsHex">Send as Hex</label>
+                </div>
+            </h5>
             <textarea id="sendData" class="form-control mb-3" rows="2" placeholder="Enter data to send..."></textarea>
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="sendAsHex">
-                <label class="form-check-label" for="sendAsHex">Send as Hex</label>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="autoSend">
+                    <label class="form-check-label" for="autoSend">Auto Send</label>
+                </div>
+                <select id="sendInterval" class="form-select w-auto">
+                    <option value="500">500 ms</option>
+                    <option value="1000" selected>1000 ms</option>
+                    <option value="2000">2000 ms</option>
+                    <option value="3000">3000 ms</option>
+                    <option value="5000">5000 ms</option>
+                </select>
             </div>
-            <button id="sendButton" class="btn btn-primary mt-3">Send</button>
-            <button id="sendMDBCommand" class="btn btn-info mt-3">Send MDB Command</button>
-            <button id="enableCoinAcceptor" class="btn btn-warning mt-3">Enable Coin Acceptor</button>
-            <button id="checkCoinCount" class="btn btn-secondary mt-3">Check Coin Count</button>
-            <button id="enableBanknoteAcceptor" class="btn btn-success mt-3">Enable Banknote Acceptor</button>
+            <div class="text-center">
+                <button id="sendButton" class="btn btn-primary btn-full-width mt-3">Send</button>
+            </div>
+            <h5 class="mt-4">Basic Commands</h5>
+            <button id="sendMDBCommand" class="btn btn-info mt-2">Send MDB Command</button>
+            <h5 class="mt-4">Device Controls</h5>
+            <button id="enableCoinAcceptor" class="btn btn-warning mt-2">Enable Coin Acceptor</button>
+            <button id="checkCoinCount" class="btn btn-secondary mt-2">Check Coin Count</button>
+            <button id="enableBanknoteAcceptor" class="btn btn-success mt-2">Enable Banknote Acceptor</button>
         </div>
     </div>
 
@@ -135,13 +170,14 @@
     </div>
 
     <div class="text-center mt-3">
+        <button id="clearButton" class="btn btn-danger ms-2">Clear Receive Data</button>
         <button id="exportButton" class="btn btn-secondary">Export Log</button>
     </div>
 
     <footer>
-        Created by <strong>Toon Makkunchon</strong> | Contact: <a href="mailto:toon.makkunchon@example.com">toon.makkunchon@example.com</a>
+        Created by <strong>Toon Makkunchon</strong> | Contact: <a
+            href="mailto:toon.makkunchon@example.com">toonpetep06@gmail.com</a>
     </footer>
-
     <script>
         const connectButton = document.getElementById('connect');
         const disconnectButton = document.getElementById('disconnect');
@@ -151,6 +187,7 @@
         const checkCoinCountButton = document.getElementById('checkCoinCount');
         const enableBanknoteAcceptorButton = document.getElementById('enableBanknoteAcceptor');
         const exportButton = document.getElementById('exportButton');
+        const clearButton = document.getElementById('clearButton');
         const outputDiv = document.getElementById('output');
         const baudRateSelect = document.getElementById('baudRate');
         const paritySelect = document.getElementById('parity');
@@ -166,7 +203,22 @@
         let reader;
         let writer;
         let keepReading = true;
+        let autoSendInterval;
 
+        document.getElementById('autoSend').addEventListener('change', function () {
+            const sendData = document.getElementById('sendData').value;
+            const interval = parseInt(document.getElementById('sendInterval').value, 10);
+
+            if (this.checked) {
+                autoSendInterval = setInterval(() => {
+                    if (sendData) {
+                        sendSerialData();
+                    }
+                }, interval);
+            } else {
+                clearInterval(autoSendInterval);
+            }
+        });
         function appendOutput(message, type) {
             const timestamp = new Date().toLocaleTimeString('en-GB'); // 24-hour format
             const prefix = type === 'sent' ? 'Sent' : 'Received';
@@ -324,6 +376,9 @@
 
             appendOutput('Disconnected from Serial Port', 'info');
         }
+        function clearOutput() {
+            outputDiv.textContent = '';
+        }
 
         connectButton.addEventListener('click', connectToSerial);
         disconnectButton.addEventListener('click', disconnectFromSerial);
@@ -333,6 +388,8 @@
         checkCoinCountButton.addEventListener('click', checkCoinCount);
         enableBanknoteAcceptorButton.addEventListener('click', enableBanknoteAcceptor);
         exportButton.addEventListener('click', exportLog);
+        clearButton.addEventListener('click', clearOutput);
     </script>
 </body>
+
 </html>
