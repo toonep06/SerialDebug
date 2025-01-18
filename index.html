@@ -50,6 +50,11 @@
 <body class="container my-5">
     <h1 class="text-center">Serial Port Reader</h1>
 
+    <div class="alert alert-danger d-none" id="unsupportedAlert">
+        <strong>Web Serial API is not supported on this browser or device.</strong>
+        Please use a supported browser like Chrome on Android or a desktop browser.
+    </div>
+
     <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
             <span>Configuration</span>
@@ -116,10 +121,6 @@
                 <label class="form-check-label" for="sendAsHex">Send as Hex</label>
             </div>
             <button id="sendButton" class="btn btn-primary mt-3">Send</button>
-            <button id="sendMDBCommand" class="btn btn-info mt-3">Send MDB Command</button>
-            <button id="enableCoinAcceptor" class="btn btn-warning mt-3">Enable Coin Acceptor</button>
-            <button id="checkCoinCount" class="btn btn-secondary mt-3">Check Coin Count</button>
-            <button id="enableBanknoteAcceptor" class="btn btn-success mt-3">Enable Banknote Acceptor</button>
         </div>
     </div>
 
@@ -146,10 +147,6 @@
         const connectButton = document.getElementById('connect');
         const disconnectButton = document.getElementById('disconnect');
         const sendButton = document.getElementById('sendButton');
-        const sendMDBCommandButton = document.getElementById('sendMDBCommand');
-        const enableCoinAcceptorButton = document.getElementById('enableCoinAcceptor');
-        const checkCoinCountButton = document.getElementById('checkCoinCount');
-        const enableBanknoteAcceptorButton = document.getElementById('enableBanknoteAcceptor');
         const exportButton = document.getElementById('exportButton');
         const outputDiv = document.getElementById('output');
         const baudRateSelect = document.getElementById('baudRate');
@@ -160,12 +157,19 @@
         const sendDataInput = document.getElementById('sendData');
         const sendAsHexCheckbox = document.getElementById('sendAsHex');
         const receiveAsHexCheckbox = document.getElementById('receiveAsHex');
-        const configSection = document.getElementById('config-section');
+        const unsupportedAlert = document.getElementById('unsupportedAlert');
 
         let port;
         let reader;
         let writer;
         let keepReading = true;
+
+        function checkWebSerialSupport() {
+            if (!('serial' in navigator)) {
+                unsupportedAlert.classList.remove('d-none');
+                connectButton.disabled = true;
+            }
+        }
 
         function appendOutput(message, type) {
             const timestamp = new Date().toLocaleTimeString('en-GB'); // 24-hour format
@@ -197,7 +201,6 @@
 
                 connectButton.style.display = 'none';
                 disconnectButton.style.display = 'inline-block';
-                configSection.style.display = 'none';
 
                 readSerialData();
             } catch (error) {
@@ -246,60 +249,6 @@
             }
         }
 
-        async function sendMDBCommand() {
-            if (!writer) {
-                appendOutput('Error: Port is not open. Please connect first.', 'error');
-                return;
-            }
-
-            const command = new Uint8Array([0x0A]); // Command to check coin count
-            await writer.write(command);
-            appendOutput('0x0A', 'sent');
-        }
-
-        async function enableCoinAcceptor() {
-            if (!writer) {
-                appendOutput('Error: Port is not open. Please connect first.', 'error');
-                return;
-            }
-
-            const command = new Uint8Array([0x0C, 0xFF, 0xFF, 0xFF, 0xFF]); // Command to enable coin acceptor
-            await writer.write(command);
-            appendOutput('0x0C 0xFF 0xFF 0xFF 0xFF', 'sent');
-        }
-
-        async function checkCoinCount() {
-            if (!writer) {
-                appendOutput('Error: Port is not open. Please connect first.', 'error');
-                return;
-            }
-
-            const command = new Uint8Array([0x0A]); // Command to check coin count
-            await writer.write(command);
-            appendOutput('0x0A', 'sent');
-        }
-
-        async function enableBanknoteAcceptor() {
-            if (!writer) {
-                appendOutput('Error: Port is not open. Please connect first.', 'error');
-                return;
-            }
-
-            const command = new Uint8Array([0x34, 0x00, 0x07, 0x00, 0x00]); // Command to enable banknote acceptor
-            await writer.write(command);
-            appendOutput('0x34 0x00 0x07 0x00 0x00', 'sent');
-        }
-
-        function exportLog() {
-            const blob = new Blob([outputDiv.textContent], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'serial_log.txt';
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
         async function disconnectFromSerial() {
             keepReading = false;
 
@@ -320,18 +269,24 @@
 
             connectButton.style.display = 'inline-block';
             disconnectButton.style.display = 'none';
-            configSection.style.display = 'block';
 
             appendOutput('Disconnected from Serial Port', 'info');
         }
 
+        function exportLog() {
+            const blob = new Blob([outputDiv.textContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'serial_log.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        document.addEventListener('DOMContentLoaded', checkWebSerialSupport);
         connectButton.addEventListener('click', connectToSerial);
         disconnectButton.addEventListener('click', disconnectFromSerial);
         sendButton.addEventListener('click', sendSerialData);
-        sendMDBCommandButton.addEventListener('click', sendMDBCommand);
-        enableCoinAcceptorButton.addEventListener('click', enableCoinAcceptor);
-        checkCoinCountButton.addEventListener('click', checkCoinCount);
-        enableBanknoteAcceptorButton.addEventListener('click', enableBanknoteAcceptor);
         exportButton.addEventListener('click', exportLog);
     </script>
 </body>
