@@ -198,6 +198,7 @@
         const sendAsHexCheckbox = document.getElementById('sendAsHex');
         const receiveAsHexCheckbox = document.getElementById('receiveAsHex');
         const configSection = document.getElementById('config-section');
+        const unsupportedAlert = document.getElementById('unsupportedAlert');
 
         let port;
         let reader;
@@ -205,6 +206,12 @@
         let keepReading = true;
         let autoSendInterval;
 
+        function checkWebSerialSupport() {
+            if (!('serial' in navigator)) {
+                unsupportedAlert.classList.remove('d-none');
+                connectButton.disabled = true;
+            }
+        }
         document.getElementById('autoSend').addEventListener('change', function () {
             const sendData = document.getElementById('sendData').value;
             const interval = parseInt(document.getElementById('sendInterval').value, 10);
@@ -380,6 +387,7 @@
             outputDiv.textContent = '';
         }
 
+        document.addEventListener('DOMContentLoaded', checkWebSerialSupport);
         connectButton.addEventListener('click', connectToSerial);
         disconnectButton.addEventListener('click', disconnectFromSerial);
         sendButton.addEventListener('click', sendSerialData);
